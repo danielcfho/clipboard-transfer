@@ -5,6 +5,8 @@ Add-Type -AssemblyName System.Drawing
 
 $selectedPath = ""
 $tempFilePath = "~\"
+$tempTxtFile = $tempFilePath + "temp.txt"
+$tempOutZipPath = ""
 $encodeLabelText = "Encode MD5:  "
 $decodeLabelText = "Decode MD5:  "
 
@@ -15,7 +17,7 @@ $form.Text = "PowerShell GUI"
 $form.Size = '470,500'
 $form.StartPosition = "CenterScreen"
 $form.MinimumSize = $form.Size
-$form.MaximizeBox = $False
+$form.MaximumSize = $form.Size
 $form.Topmost = $True
 
 
@@ -42,10 +44,22 @@ $browserButton.Location = New-Object System.Drawing.Point(360, 325)
 $browserButton.Size = New-Object System.Drawing.Size(70, 20)
 $browserButton.Text = 'Browse...'
 
-$checkbox = New-Object Windows.Forms.Checkbox
-$checkbox.Location = '140,9'
-$checkbox.AutoSize = $True
-$checkbox.Text = "Clear afterwards"
+$clearListCheckbox = New-Object Windows.Forms.Checkbox
+$clearListCheckbox.Location = '140,9'
+$clearListCheckbox.AutoSize = $True
+$clearListCheckbox.Text = "Clear Temp Encode Files afterwards"
+$clearListCheckbox.Checked = $True
+
+$clearTempDecodeFileCheckbox = New-Object Windows.Forms.Checkbox
+$clearTempDecodeFileCheckbox.Location = '140,354'
+$clearTempDecodeFileCheckbox.AutoSize = $True
+$clearTempDecodeFileCheckbox.Text = "Clear Temp Decode Files afterwards"
+$clearTempDecodeFileCheckbox.Checked = $True
+
+$overrideDecodeFileCheckbox = New-Object Windows.Forms.Checkbox
+$overrideDecodeFileCheckbox.Location = '140,382'
+$overrideDecodeFileCheckbox.AutoSize = $True
+$overrideDecodeFileCheckbox.Text = "Override Exist Files"
 
 $label = New-Object Windows.Forms.Label
 $label.Location = '137,39'
@@ -57,6 +71,11 @@ $clearListButton.Location = '330,30'
 $clearListButton.Size = '5,25'
 $clearListButton.Width = 120
 $clearListButton.Text = "Clear List"
+
+$line = New-Object System.Windows.Forms.Label
+$line.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
+$line.Location = New-Object System.Drawing.Point(0, 310)
+$line.Size = New-Object System.Drawing.Size($form.Size.Width, 1)
 
 $encodeLabel = New-Object Windows.Forms.Label
 $encodeLabel.Location = '5,270'
@@ -90,13 +109,16 @@ $form.Controls.Add($encodeButton)
 $form.Controls.Add($decodeButton)
 $form.Controls.Add($outputTextBox)
 $form.Controls.Add($browserButton)
-$form.Controls.Add($checkbox)
+$form.Controls.Add($clearListCheckbox)
 $form.Controls.Add($label)
 $form.Controls.Add($encodeLabel)
 $form.Controls.Add($decodeLabel)
+$form.Controls.Add($line)
 $form.Controls.Add($listBox)
 $form.Controls.Add($statusBar)
 $form.Controls.Add($clearListButton)
+$form.Controls.Add($clearTempDecodeFileCheckbox)
+$form.Controls.Add($overrideDecodeFileCheckbox)
 $form.ResumeLayout()
 
 ### Encode function ###
@@ -113,8 +135,6 @@ Function Encode-File($InputFile){
         $base64String = [System.Convert]::ToBase64String($binaryData)
 
         # Write the encoded data to a text file
-        $tempTxtFile = $tempFilePath + "temp.txt"
-
         Set-Content -Path $tempTxtFile -Value $base64String -Encoding ASCII
 
         Get-Content -Raw $tempTxtFile | Set-Clipboard
@@ -141,19 +161,20 @@ Function Decode-File(){
 
         # Create the normalized output file path
         $tempOutZipPath = $outputTextBox.Text + "\tempOut.zip"
-
-        #Write the decoded binary data to a file
+        # Write the decoded binary data to a file
         [System.IO.File]::WriteAllBytes($tempOutZipPath, $binaryData)
 
         $statusBar.Text = "Base64 file decoded successfully."
 
-        $hashOutput = Get-FileHash $tempOutZipPath
+        $hashOutput = Get-FileHash $tempOutZipPath -Algorithm MD5
 
         $decodeLabel.Text = $decodeLabelText + $hashOutput.Hash
 
-        Expand-Archive -Path $tempOutZipPath -DestinationPath $outputTextBox.Text -Force
-
-        Remove-Item $tempOutZipPath
+        if($overrideDecodeFileCheckbox.Checked){
+            Expand-Archive -Path $tempOutZipPath -DestinationPath $outputTextBox.Text -Force
+        }else{
+            Expand-Archive -Path $tempOutZipPath -DestinationPath $outputTextBox.Text -Confirm
+        }
     }
     catch [Exception] {
         ##Write-Host "An error occurred while decoding the file: $_"
@@ -163,16 +184,34 @@ Function Decode-File(){
 ### Write event handlers ###
 
 $encode_Click = {
-    $tempZipFile = $tempFilePath + "temp.zip"
-    Compress-Archive -Path $listBox.Items -DestinationPath $tempZipFile -Force -Verbose
+    if($listBox.Items.Count.Equals(0)){
+        $statusBar.Text = "No File in List, Drop File into it!"
+    }else{
+        $tempZipFile = $tempFilePath + "temp.zip"
+        Compress-Archive -Path $listBox.Items -DestinationPath $tempZipFile -Force -Verbose
     
-    Encode-File($tempZipFile)
-
+        Encode-File($tempZipFile)
+ 
+        if($clearListCheckbox.Checked){
+            Remove-Item -Path $tempTxtFile
+            Remove-Item -Path $tempZipFile
+        }
+    }
 }
 
 $decode_Click = {
+    $clipboard = Get-Clipboard
 
-    Decode-File
+    if($outputTextBox.TextLength.Equals(0)){
+        $statusBar.Text = "No Output Location Set"
+    }else{
+        Decode-File
+
+        if($clearTempDecodeFileCheckbox.Checked){
+            $tempOutZipPath = $outputTextBox.Text + "\tempOut.zip"
+            Remove-Item $tempOutZipPath
+        }
+    }
 }
 
 $browser_Click = {
