@@ -64,7 +64,7 @@ $overrideDecodeFileCheckbox = New-Object Windows.Forms.Checkbox
 $overrideDecodeFileCheckbox.Location = '140,432'
 $overrideDecodeFileCheckbox.AutoSize = $True
 $overrideDecodeFileCheckbox.Text = "Override Exist Files"
-$clearTempDecodeFileCheckbox.Checked = $True
+$overrideDecodeFileCheckbox.Checked = $True
 
 $label = New-Object Windows.Forms.Label
 $label.Location = '137,39'
