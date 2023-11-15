@@ -7,7 +7,6 @@ $selectedPath = ""
 $tempFilePath = "~\"
 $tempTxtFile = $tempFilePath + "temp.txt"
 $tempOutZipPath = ""
-$encodeLabelText = "Encode MD5:  "
 $decodeLabelText = "Clipboard MD5:  "
 
 ### Create form ###
@@ -35,8 +34,8 @@ $decodeButton.Width = 120
 $decodeButton.Text = "Decode"
 
 $getClipboard = New-Object System.Windows.Forms.Button
-$getClipboard.Location = '5,315'
-$getClipboard.Size = '75,20'
+$getClipboard.Location = '5,280'
+$getClipboard.Size = '75,30'
 $getClipboard.Width = 120
 $getClipboard.Text = "Get Clipboard"
 
@@ -78,19 +77,8 @@ $clearListButton.Size = '5,25'
 $clearListButton.Width = 120
 $clearListButton.Text = "Clear List"
 
-$line = New-Object System.Windows.Forms.Label
-$line.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-$line.Location = New-Object System.Drawing.Point(0, 310)
-$line.Size = New-Object System.Drawing.Size($form.Size.Width, 1)
-
-$encodeLabel = New-Object Windows.Forms.Label
-$encodeLabel.Location = '5,270'
-$encodeLabel.Size = '400,25'
-$encodeLabel.Text = $encodeLabelText
-$encodeLabel.AutoSize = $False
-
 $decodeLabel = New-Object Windows.Forms.Label
-$decodeLabel.Location = '5,340'
+$decodeLabel.Location = '10,320'
 $decodeLabel.Size = '400,25'
 $decodeLabel.Text = $decodeLabelText
 $decodeLabel.AutoSize = $False
@@ -117,9 +105,7 @@ $form.Controls.Add($outputTextBox)
 $form.Controls.Add($browserButton)
 $form.Controls.Add($clearListCheckbox)
 $form.Controls.Add($label)
-$form.Controls.Add($encodeLabel)
 $form.Controls.Add($decodeLabel)
-$form.Controls.Add($line)
 $form.Controls.Add($listBox)
 $form.Controls.Add($getClipboard)
 $form.Controls.Add($statusBar)
@@ -142,13 +128,9 @@ Function Encode-File($InputFile){
         
         $content = Get-Content -Raw $tempTxtFile
 
-        $stream = [IO.MemoryStream]::new([byte[]][char[]]$content)
-        $hash = Get-FileHash -InputStream $stream -Algorithm MD5
-        $size = [System.Text.Encoding]::ASCII.GetByteCount($content)
-
-        $encodeLabel.Text = $encodeLabelText + $hash.Hash + "`nSize: " + $size * 0.001 + " Kb"
-
         Set-Clipboard -Value $content
+
+        GetClipboard
 
         $statusBar.Text = "Binary txt copied to Clipboard, run Decode from other machine."
 
@@ -192,7 +174,7 @@ Function GetClipboard() {
 
     # Check if clipboard data is not empty
     if ($clipboard) {
-
+        $clipboard = $clipboard -replace "`r`n","`n"
         $stream = [IO.MemoryStream]::new([byte[]][char[]]$clipboard)
         $hash = Get-FileHash -InputStream $stream -Algorithm MD5
         $size = [System.Text.Encoding]::ASCII.GetByteCount($clipboard)
@@ -293,7 +275,6 @@ $listBox_SelectDel = {
 $clearList_Click ={
     $listBox.Items.Clear()
     $statusBar.Text = ""
-    $encodeLabel.Text = $encodeLabelText
     [System.Windows.Forms.Clipboard]::Clear()
 }
 

@@ -8,11 +8,10 @@
 import SwiftUI
 import Zip
 import AppKit
+import CryptoKit
 
 struct ContentView: View {
 
-    
-    
     @State private var selectedPath = ""
     @State private var selectedFiles: Set<URL> = Set()
 
@@ -21,6 +20,10 @@ struct ContentView: View {
     @State private var isClearing = false
     @State private var clearEncodeTemp = true
     @State private var clearDecodeTemp = true
+    
+    @State private var clipboardData = ""
+    @State private var clipboardSize = 0.0
+    @State private var clipboardMd5Hash = ""
     
     var body: some View {
 
@@ -60,6 +63,13 @@ struct ContentView: View {
             .frame(height: 200)
             
             Spacer()
+            Button(action: getClipboardInfo){
+                Text("Get Clipboard")
+            }
+            Text("MD5 Hash: \(clipboardMd5Hash.uppercased())")
+            Text("Clipboard Size: \(clipboardSize * 0.001) Kb")
+            Spacer()
+
             HStack {
                 TextField("Output Location", text: $selectedPath)
                     .frame(width: 350, height: 23)
@@ -84,7 +94,7 @@ struct ContentView: View {
             
         }
         .padding()
-        .frame(width: 500.0, height: 450.0)
+        .frame(width: 500.0, height: 550.0)
         
     }
     func clearList(){
@@ -92,7 +102,7 @@ struct ContentView: View {
     }
     
     func encodeFile() {
-        guard !selectedFiles.isEmpty else {return}
+        guard !fileURLs.isEmpty else {return}
         
         let tempDir = FileManager.default.temporaryDirectory
 
@@ -117,6 +127,8 @@ struct ContentView: View {
                 clipboard.clearContents()
                 clipboard.setString(base64String, forType: .string)
                 print("Base64 string copied to clipboard.")
+                
+                getClipboardInfo()
                 
                 if(clearEncodeTemp){
                     // Remove base64.txt and zip archive file
@@ -158,6 +170,25 @@ struct ContentView: View {
         }
     }
     
+    func getClipboardInfo() {
+        // Get clipboard data
+        if let data = NSPasteboard.general.string(forType: .string) {
+            clipboardData = data
+            clipboardSize = Double(data.utf16.count)
+            
+            // Calculate MD5 hash
+            if let asciiData = data.data(using: .ascii) {
+                let md5Digest = Insecure.MD5.hash(data: asciiData)
+                clipboardMd5Hash = md5Digest.map { String(format: "%02hhx", $0) }.joined()
+            }
+            
+        } else {
+            // Reset values if clipboard is empty
+            clipboardData = ""
+            clipboardSize = 0
+            clipboardMd5Hash = ""
+        }
+    }
     func openBrowser() {
         // Open file browser
         let openPanel = NSOpenPanel()
@@ -177,7 +208,7 @@ struct ContentView: View {
     
     private func handleDrop(providers: [NSItemProvider]) {
         for provider in providers {
-            _ = provider.loadItem(forTypeIdentifier: "public.file-url") { data, _ in
+            provider.loadItem(forTypeIdentifier: "public.file-url") { data, _ in
                 if let urlData = data as? Data, let url = URL(dataRepresentation: urlData, relativeTo: nil) {
                     DispatchQueue.main.async {
                         self.fileURLs.append(url)
