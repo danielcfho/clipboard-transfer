@@ -8,18 +8,17 @@ $tempFilePath = "~\"
 $tempTxtFile = $tempFilePath + "temp.txt"
 $tempOutZipPath = ""
 $encodeLabelText = "Encode MD5:  "
-$decodeLabelText = "Decode MD5:  "
+$decodeLabelText = "Clipboard MD5:  "
 
 ### Create form ###
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "PowerShell GUI"
-$form.Size = '470,500'
+$form.Size = '470,550'
 $form.StartPosition = "CenterScreen"
 $form.MinimumSize = $form.Size
 $form.MaximumSize = $form.Size
-$form.Topmost = $True
-
+$form.Topmost = $False
 
 ### Define controls ###
 
@@ -30,17 +29,23 @@ $encodeButton.Width = 120
 $encodeButton.Text = "Encode"
 
 $decodeButton = New-Object System.Windows.Forms.Button
-$decodeButton.Location = '5,350'
+$decodeButton.Location = '5,400'
 $decodeButton.Size = '75,50'
 $decodeButton.Width = 120
 $decodeButton.Text = "Decode"
 
+$getClipboard = New-Object System.Windows.Forms.Button
+$getClipboard.Location = '5,315'
+$getClipboard.Size = '75,20'
+$getClipboard.Width = 120
+$getClipboard.Text = "Get Clipboard"
+
 $outputTextBox = New-Object System.Windows.Forms.TextBox
-$outputTextBox.Location = '5,325'
+$outputTextBox.Location = '5,375'
 $outputTextBox.Size = '350,23'
 
 $browserButton = New-Object System.Windows.Forms.Button
-$browserButton.Location = New-Object System.Drawing.Point(360, 325)
+$browserButton.Location = New-Object System.Drawing.Point(360, 375)
 $browserButton.Size = New-Object System.Drawing.Size(70, 20)
 $browserButton.Text = 'Browse...'
 
@@ -51,15 +56,16 @@ $clearListCheckbox.Text = "Clear Temp Encode Files afterwards"
 $clearListCheckbox.Checked = $True
 
 $clearTempDecodeFileCheckbox = New-Object Windows.Forms.Checkbox
-$clearTempDecodeFileCheckbox.Location = '140,354'
+$clearTempDecodeFileCheckbox.Location = '140,404'
 $clearTempDecodeFileCheckbox.AutoSize = $True
 $clearTempDecodeFileCheckbox.Text = "Clear Temp Decode Files afterwards"
 $clearTempDecodeFileCheckbox.Checked = $True
 
 $overrideDecodeFileCheckbox = New-Object Windows.Forms.Checkbox
-$overrideDecodeFileCheckbox.Location = '140,382'
+$overrideDecodeFileCheckbox.Location = '140,432'
 $overrideDecodeFileCheckbox.AutoSize = $True
 $overrideDecodeFileCheckbox.Text = "Override Exist Files"
+$clearTempDecodeFileCheckbox.Checked = $True
 
 $label = New-Object Windows.Forms.Label
 $label.Location = '137,39'
@@ -79,13 +85,13 @@ $line.Size = New-Object System.Drawing.Size($form.Size.Width, 1)
 
 $encodeLabel = New-Object Windows.Forms.Label
 $encodeLabel.Location = '5,270'
-$encodeLabel.AutoSize = $True
+$encodeLabel.Size = '400,25'
 $encodeLabel.Text = $encodeLabelText
 $encodeLabel.AutoSize = $False
 
 $decodeLabel = New-Object Windows.Forms.Label
-$decodeLabel.Location = '5,410'
-$decodeLabel.AutoSize = $True
+$decodeLabel.Location = '5,340'
+$decodeLabel.Size = '400,25'
 $decodeLabel.Text = $decodeLabelText
 $decodeLabel.AutoSize = $False
 
@@ -115,6 +121,7 @@ $form.Controls.Add($encodeLabel)
 $form.Controls.Add($decodeLabel)
 $form.Controls.Add($line)
 $form.Controls.Add($listBox)
+$form.Controls.Add($getClipboard)
 $form.Controls.Add($statusBar)
 $form.Controls.Add($clearListButton)
 $form.Controls.Add($clearTempDecodeFileCheckbox)
@@ -124,10 +131,6 @@ $form.ResumeLayout()
 ### Encode function ###
 Function Encode-File($InputFile){
     try {
-        $hashOutput = Get-FileHash $InputFile -Algorithm MD5
-
-        $encodeLabel.Text = $encodeLabelText + $hashOutput.Hash
-
         # Read the binary file
         $binaryData = [System.IO.File]::ReadAllBytes($(Resolve-Path $InputFile))
 
@@ -136,10 +139,16 @@ Function Encode-File($InputFile){
 
         # Write the encoded data to a text file
         Set-Content -Path $tempTxtFile -Value $base64String -Encoding ASCII
+        
+        $content = Get-Content -Raw $tempTxtFile
 
-        Get-Content -Raw $tempTxtFile | Set-Clipboard
+        $stream = [IO.MemoryStream]::new([byte[]][char[]]$content)
+        $hash = Get-FileHash -InputStream $stream -Algorithm MD5
+        $size = [System.Text.Encoding]::ASCII.GetByteCount($content)
 
-        Start-Sleep -Seconds 1
+        $encodeLabel.Text = $encodeLabelText + $hash.Hash + "`nSize: " + $size * 0.001 + " Kb"
+
+        Set-Clipboard -Value $content
 
         $statusBar.Text = "Binary txt copied to Clipboard, run Decode from other machine."
 
@@ -154,8 +163,6 @@ Function Decode-File(){
         # Read the Base64-encoded file
         $base64String = Get-Clipboard
 
-        Start-Sleep -Seconds 1
-
         # Convert the Base64 string to binary data
         $binaryData = [System.Convert]::FromBase64String($base64String)
 
@@ -166,10 +173,6 @@ Function Decode-File(){
 
         $statusBar.Text = "Base64 file decoded successfully."
 
-        $hashOutput = Get-FileHash $tempOutZipPath -Algorithm MD5
-
-        $decodeLabel.Text = $decodeLabelText + $hashOutput.Hash
-
         if($overrideDecodeFileCheckbox.Checked){
             Expand-Archive -Path $tempOutZipPath -DestinationPath $outputTextBox.Text -Force
         }else{
@@ -178,6 +181,24 @@ Function Decode-File(){
     }
     catch [Exception] {
         ##Write-Host "An error occurred while decoding the file: $_"
+    }
+}
+
+
+Function GetClipboard() {
+    # Get clipboard content
+    # Read the Base64-encoded file
+    $clipboard = Get-Clipboard -Format Text -Raw
+
+    # Check if clipboard data is not empty
+    if ($clipboard) {
+
+        $stream = [IO.MemoryStream]::new([byte[]][char[]]$clipboard)
+        $hash = Get-FileHash -InputStream $stream -Algorithm MD5
+        $size = [System.Text.Encoding]::ASCII.GetByteCount($clipboard)
+       
+        $decodeLabel.Text = $decodeLabelText + $hash.Hash + "`nSize: " + $size * 0.001 + " Kb"
+
     }
 }
 
@@ -236,13 +257,27 @@ $listBox_DragOver = [System.Windows.Forms.DragEventHandler]{
 }
 	
 $listBox_DragDrop = [System.Windows.Forms.DragEventHandler]{
+
 	foreach ($filename in $_.Data.GetData([Windows.Forms.DataFormats]::FileDrop)) # $_ = [System.Windows.Forms.DragEventArgs]
     {
         if(!$listBox.Items.Contains($filename)){
 		    $listBox.Items.Add($filename)
+            $totalSize += (Get-Item $filename).Length
+        }
+
+        $totalSize = 0
+        foreach ($item in $listBox.Items) {
+            $itemPath = $item.ToString()
+            if (Test-Path -Path $itemPath -PathType Container) {
+                $folderSize = (Get-ChildItem -Path $itemPath -Recurse | Measure-Object -Property Length -Sum).Sum
+                $totalSize += $folderSize
+            } else {
+                $fileSize = (Get-Item -Path $itemPath).Length
+                $totalSize += $fileSize
+            }
         }
 	}
-    $statusBar.Text = ("List contains $($listBox.Items.Count) items")
+    $statusBar.Text = ("List contains $($listBox.Items.Count) items, total:" + ($totalSize * 0.001) + "Kb")
 }
 
 $listBox_SelectDel = {
@@ -257,6 +292,9 @@ $listBox_SelectDel = {
 
 $clearList_Click ={
     $listBox.Items.Clear()
+    $statusBar.Text = ""
+    $encodeLabel.Text = $encodeLabelText
+    [System.Windows.Forms.Clipboard]::Clear()
 }
 
 $form_FormClosed = {
@@ -274,6 +312,10 @@ $form_FormClosed = {
     { }
 }
 
+$getClipboard_Click = {
+    GetClipboard
+}
+
 ### Wire up events ###
 
 $encodeButton.Add_Click($encode_Click)
@@ -283,9 +325,11 @@ $listBox.Add_DragOver($listBox_DragOver)
 $listBox.Add_DragDrop($listBox_DragDrop)
 $listBox.Add_KeyDown($listBox_SelectDel)
 $clearListButton.Add_Click($clearList_Click)
+$getClipboard.Add_Click($getClipboard_Click)
 $form.Add_FormClosed($form_FormClosed)
 
 
 #### Show form ###
 
 [void] $form.ShowDialog()
+
