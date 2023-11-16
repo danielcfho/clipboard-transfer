@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import Zip
+import ZIPFoundation
 import AppKit
 import CryptoKit
 
@@ -20,6 +20,7 @@ struct ContentView: View {
     @State private var isClearing = false
     @State private var clearEncodeTemp = true
     @State private var clearDecodeTemp = true
+    @State private var override = false
     
     @State private var clipboardData = ""
     @State private var clipboardSize = 0.0
@@ -63,8 +64,13 @@ struct ContentView: View {
             .frame(height: 200)
             
             Spacer()
-            Button(action: getClipboardInfo){
-                Text("Get Clipboard")
+            HStack{
+                Button(action: getClipboardInfo){
+                    Text("Get Clipboard")
+                }
+                Button(action: clearClipboard){
+                    Text("Clear Clipboard")
+                }
             }
             Text("MD5 Hash: \(clipboardMd5Hash.uppercased())")
             Text("Clipboard Size: \(clipboardSize * 0.001) Kb")
@@ -86,7 +92,7 @@ struct ContentView: View {
                     Toggle(isOn: $clearDecodeTemp) {
                         Text("Clear Temp Encode Files")
                     }
-                    Toggle(isOn: .constant(true)) {
+                    Toggle(isOn: $override) {
                         Text("Override Exist Files")
                     }
                 }
@@ -101,14 +107,24 @@ struct ContentView: View {
         fileURLs.removeAll()
     }
     
+    func clearClipboard(){
+        NSPasteboard.general.clearContents()
+    }
+    
     func encodeFile() {
-        guard !fileURLs.isEmpty else {return}
+        guard !fileURLs.isEmpty else { return }
         
         let tempDir = FileManager.default.temporaryDirectory
-
+        
         do {
             // Create a Zip archive at the specified path
-            let zipFilePath = try Zip.quickZipFiles(fileURLs, fileName: "encodeTemp")
+            let zipFilePath = tempDir.appendingPathComponent("encodeTemp.zip")
+            let archive = try Archive(url: zipFilePath, accessMode: .create)
+            
+            for fileURL in fileURLs {
+                let fileName = fileURL.lastPathComponent
+                try archive.addEntry(with: fileName, relativeTo: fileURL.deletingLastPathComponent())
+            }
             
             print("Files zipped successfully to \(zipFilePath.path)")
             
@@ -130,7 +146,7 @@ struct ContentView: View {
                 
                 getClipboardInfo()
                 
-                if(clearEncodeTemp){
+                if clearEncodeTemp {
                     // Remove base64.txt and zip archive file
                     try FileManager.default.removeItem(at: base64FileURL)
                     try FileManager.default.removeItem(at: zipFilePath)
@@ -139,8 +155,6 @@ struct ContentView: View {
                 print("Error reading zip file.")
             }
             
-
-            
         } catch {
             print("Error zipping files: \(error.localizedDescription)")
         }
@@ -148,9 +162,9 @@ struct ContentView: View {
     
     func decodeFile() {
         guard !selectedPath.isEmpty else { return }
+        
         // Decode logic
         let tempDir = FileManager.default.temporaryDirectory
-
         let clipboard = NSPasteboard.general
         guard let base64String = clipboard.string(forType: .string) else { return }
         let decodedData = Data(base64Encoded: base64String)
@@ -160,8 +174,31 @@ struct ContentView: View {
         do {
             try decodedData?.write(to: decodeFilePath)
             print("Decoded data saved to \(decodeFilePath.path)")
-            try Zip.unzipFile(decodeFilePath, destination: dictPath, overwrite: true, password: nil)
-            if(clearDecodeTemp){
+            
+            // Use ZIPFoundation to unzip the file
+            let archive = try Archive(url: decodeFilePath, accessMode: .read)
+            for entry in archive {
+                let tempPath = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(entry.path)
+                let toPath = dictPath.appendingPathComponent(entry.path)
+                
+                //clear temp folder before unzip
+                try? FileManager.default.removeItem(at: tempPath)
+                //overwrite files if files exist
+                if(self.override){
+                    try? FileManager.default.removeItem(at: toPath)
+                }
+                
+                if entry.type == .directory {
+                    try FileManager.default.createDirectory(at: tempPath, withIntermediateDirectories: true, attributes: nil)
+                } else {
+                    // Extract files into temp directory first
+                    try archive.extract(entry, to: tempPath)
+                    
+                    try FileManager.default.moveItem(at: tempPath, to: toPath)
+                }
+            }
+            
+            if clearDecodeTemp {
                 // Remove base64.txt and zip archive file
                 try FileManager.default.removeItem(at: decodeFilePath)
             }

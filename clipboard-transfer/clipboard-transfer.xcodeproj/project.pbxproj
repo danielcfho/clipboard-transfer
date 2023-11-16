@@ -11,7 +11,7 @@
 		D4266C182B035537009E47D5 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4266C172B035537009E47D5 /* ContentView.swift */; };
 		D4266C1A2B035538009E47D5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D4266C192B035538009E47D5 /* Assets.xcassets */; };
 		D4266C1D2B035538009E47D5 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D4266C1C2B035538009E47D5 /* Preview Assets.xcassets */; };
-		D4266C262B037916009E47D5 /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = D4266C252B037916009E47D5 /* Zip */; };
+		D4BE35092B04C6ED00E75717 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = D4BE35082B04C6ED00E75717 /* ZIPFoundation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,7 +28,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D4266C262B037916009E47D5 /* Zip in Frameworks */,
+				D4BE35092B04C6ED00E75717 /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -88,7 +88,7 @@
 			);
 			name = "clipboard-transfer";
 			packageProductDependencies = (
-				D4266C252B037916009E47D5 /* Zip */,
+				D4BE35082B04C6ED00E75717 /* ZIPFoundation */,
 			);
 			productName = "clipboard-transfer";
 			productReference = D4266C122B035537009E47D5 /* clipboard-transfer.app */;
@@ -119,7 +119,7 @@
 			);
 			mainGroup = D4266C092B035537009E47D5;
 			packageReferences = (
-				D4266C242B037916009E47D5 /* XCRemoteSwiftPackageReference "Zip" */,
+				D4BE35072B04C6ED00E75717 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 			);
 			productRefGroup = D4266C132B035537009E47D5 /* Products */;
 			projectDirPath = "";
@@ -279,15 +279,16 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "clipboard-transfer/clipboard_transfer.entitlements";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"clipboard-transfer/Preview Content\"";
 				DEVELOPMENT_TEAM = 5LL4M27P6L;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Clipboard Transfer";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -308,15 +309,16 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "clipboard-transfer/clipboard_transfer.entitlements";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"clipboard-transfer/Preview Content\"";
 				DEVELOPMENT_TEAM = 5LL4M27P6L;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Clipboard Transfer";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -355,21 +357,21 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		D4266C242B037916009E47D5 /* XCRemoteSwiftPackageReference "Zip" */ = {
+		D4BE35072B04C6ED00E75717 /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/marmelroy/Zip";
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.1.2;
+				minimumVersion = 0.9.17;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		D4266C252B037916009E47D5 /* Zip */ = {
+		D4BE35082B04C6ED00E75717 /* ZIPFoundation */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = D4266C242B037916009E47D5 /* XCRemoteSwiftPackageReference "Zip" */;
-			productName = Zip;
+			package = D4BE35072B04C6ED00E75717 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
