@@ -39,6 +39,12 @@ $getClipboard.Size = '75,30'
 $getClipboard.Width = 120
 $getClipboard.Text = "Get Clipboard"
 
+$clearClipboard = New-Object System.Windows.Forms.Button
+$clearClipboard.Location = '140,280'
+$clearClipboard.Size = '75,30'
+$clearClipboard.Width = 120
+$clearClipboard.Text = "Clear Clipboard"
+
 $outputTextBox = New-Object System.Windows.Forms.TextBox
 $outputTextBox.Location = '5,375'
 $outputTextBox.Size = '350,23'
@@ -64,7 +70,7 @@ $overrideDecodeFileCheckbox = New-Object Windows.Forms.Checkbox
 $overrideDecodeFileCheckbox.Location = '140,432'
 $overrideDecodeFileCheckbox.AutoSize = $True
 $overrideDecodeFileCheckbox.Text = "Override Exist Files"
-$overrideDecodeFileCheckbox.Checked = $True
+$clearTempDecodeFileCheckbox.Checked = $True
 
 $label = New-Object Windows.Forms.Label
 $label.Location = '137,39'
@@ -108,6 +114,7 @@ $form.Controls.Add($label)
 $form.Controls.Add($decodeLabel)
 $form.Controls.Add($listBox)
 $form.Controls.Add($getClipboard)
+$form.Controls.Add($clearClipboard)
 $form.Controls.Add($statusBar)
 $form.Controls.Add($clearListButton)
 $form.Controls.Add($clearTempDecodeFileCheckbox)
@@ -297,6 +304,11 @@ $getClipboard_Click = {
     GetClipboard
 }
 
+$clearClipboard_Click = {
+    Set-Clipboard -Value $null
+    $decodeLabel.Text = $decodeLabelText + "0" + "`nSize: 0 Kb"
+}
+
 ### Wire up events ###
 
 $encodeButton.Add_Click($encode_Click)
@@ -307,6 +319,7 @@ $listBox.Add_DragDrop($listBox_DragDrop)
 $listBox.Add_KeyDown($listBox_SelectDel)
 $clearListButton.Add_Click($clearList_Click)
 $getClipboard.Add_Click($getClipboard_Click)
+$clearClipboard.Add_Click($clearClipboard_Click)
 $form.Add_FormClosed($form_FormClosed)
 
 
