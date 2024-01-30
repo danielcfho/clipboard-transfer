@@ -57,13 +57,18 @@ $browserButton.Text = 'Browse...'
 $clearListCheckbox = New-Object Windows.Forms.Checkbox
 $clearListCheckbox.Location = '140,9'
 $clearListCheckbox.AutoSize = $True
-$clearListCheckbox.Text = "Clear Temp Encode Files afterwards"
+$clearListCheckbox.Text = "Clear Temp Files afterwards"
 $clearListCheckbox.Checked = $True
+
+$compressCheckbox = New-Object Windows.Forms.Checkbox
+$compressCheckbox.Location = '330,9'
+$compressCheckbox.AutoSize = $True
+$compressCheckbox.Text = "Compress File"
 
 $clearTempDecodeFileCheckbox = New-Object Windows.Forms.Checkbox
 $clearTempDecodeFileCheckbox.Location = '140,404'
 $clearTempDecodeFileCheckbox.AutoSize = $True
-$clearTempDecodeFileCheckbox.Text = "Clear Temp Decode Files afterwards"
+$clearTempDecodeFileCheckbox.Text = "Clear Temp Files afterwards"
 $clearTempDecodeFileCheckbox.Checked = $True
 
 $overrideDecodeFileCheckbox = New-Object Windows.Forms.Checkbox
@@ -110,6 +115,7 @@ $form.Controls.Add($decodeButton)
 $form.Controls.Add($outputTextBox)
 $form.Controls.Add($browserButton)
 $form.Controls.Add($clearListCheckbox)
+$form.Controls.Add($compressCheckbox)
 $form.Controls.Add($label)
 $form.Controls.Add($decodeLabel)
 $form.Controls.Add($listBox)
@@ -198,7 +204,11 @@ $encode_Click = {
         $statusBar.Text = "No File in List, Drop File into it!"
     }else{
         $tempZipFile = $tempFilePath + "temp.zip"
-        Compress-Archive -Path $listBox.Items -DestinationPath $tempZipFile -Force -Verbose
+        if($compressCheckbox.Checked){
+            Compress-Archive -Path $listBox.Items -DestinationPath $tempZipFile -Force -Verbose
+        }else{
+            Compress-Archive -Path $listBox.Items -DestinationPath $tempZipFile -Force -Verbose -CompressionLevel NoCompression
+        }
     
         Encode-File($tempZipFile)
  
